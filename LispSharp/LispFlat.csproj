@@ -53,7 +53,6 @@
     <Compile Include="Exp.cs" />
     <Compile Include="lisp.cs" />
     <Compile Include="Test.cs" />
-    <None Include="NewLisp.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

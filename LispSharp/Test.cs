@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static LispFlat.Lisp;
 using static System.Console;
 
@@ -43,11 +41,11 @@ namespace LispFlat
             ["(car a)"] = "1",
             ["(cdr a)"] = "(2 3 4)",
             ["(car (cdr (cdr a)))"] = "3",
-            [@"(define combine (lambda (f)
-            (lambda (x y)
-              (if (null? x) (quote ())
-                  (f (list (car x) (car y))
-                     ((combine f) (cdr x) (cdr y)))))))".Replace("\r\n", "")] = "",
+            ["(define combine (lambda (f)"+
+            "(lambda (x y)"+
+              "(if (null? x) (quote ())"+
+                  "(f (list (car x) (car y))"+
+                     "((combine f) (cdr x) (cdr y)))))))"] = "",
             ["(cons (list 1) (list 2 3))"] = "((1) 2 3)",
             ["(cons 1 (list 2 3))"] = "(1 2 3)",
             ["(define zip (combine cons))"] = "",
@@ -55,14 +53,20 @@ namespace LispFlat
             ["(append (list 1) (list 2 3))"] = "(1 2 3)",
             ["(append (list 1 2) (list 3))"] = "(1 2 3)",
             ["((combine append) (list 1 2 3 4) (list 5 6 7 8))"] = "(1 5 2 6 3 7 4 8)",
-            [@"(define riff-shuffle (lambda (deck) (begin
-               (define take (lambda (n seq) (if (<= n 0) (quote ()) (cons (car seq) (take (- n 1) (cdr seq))))))
-               (define drop (lambda (n seq) (if (<= n 0) seq(drop (- n 1) (cdr seq)))))
-               (define mid (lambda (seq) (/ (length seq) 2)))
-               ((combine append) (take (mid deck) deck) (drop (mid deck) deck)))))".Replace("\r\n","")]= "",
-            [ "(riff-shuffle (list 1 2 3 4 5 6 7 8))"]= "(1 5 2 6 3 7 4 8)",
-            ["((repeat riff-shuffle) (list 1 2 3 4 5 6 7 8))"]=  "(1 3 5 7 2 4 6 8)",
-            ["(riff-shuffle (riff-shuffle (riff-shuffle (list 1 2 3 4 5 6 7 8))))"]="(1 2 3 4 5 6 7 8)"
+            ["(define riff-shuffle (lambda (deck) (begin "+
+               "(define take (lambda (n seq) (if (<= n 0) (quote ()) (cons (car seq) (take (- n 1) (cdr seq))))))"+
+               "(define drop (lambda (n seq) (if (<= n 0) seq(drop (- n 1) (cdr seq)))))"+
+               "(define mid (lambda (seq) (/ (length seq) 2)))"+
+               "((combine append) (take (mid deck) deck) (drop (mid deck) deck)))))"] = "",
+            ["(riff-shuffle (list 1 2 3 4 5 6 7 8))"] = "(1 5 2 6 3 7 4 8)",
+            ["((repeat riff-shuffle) (list 1 2 3 4 5 6 7 8))"] = "(1 3 5 7 2 4 6 8)",
+            ["(riff-shuffle (riff-shuffle (riff-shuffle (list 1 2 3 4 5 6 7 8))))"] = "(1 2 3 4 5 6 7 8)",
+            ["(begin " +
+                "(define map (lambda (fn seq) (if (null? seq) (quote ()) (cons (fn (car seq)) (map fn (cdr seq))))))" +
+                "(map (lambda (x) (+ x x)) a) )"] = "(2 4 6 8)",
+            ["(begin " +
+                "(define reduce (lambda (fn init seq) (if (null? seq) init (fn (car seq) (reduce fn init (cdr seq))))))" +
+                "(reduce + 0 a) )"] = "10"
         };
 
         //"For each (exp, expected) test case, see if eval(parse(exp)) == expected."

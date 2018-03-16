@@ -6,16 +6,21 @@ namespace LispFlat
     {
         static void Main(string[] args)
         {
-            var env = Lisp.StandardEnv();
+            Env env = null;
 
-            try
+            if (args.Length == 1)
             {
-                Tests.Run(env);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.Read();
+                env = Lisp.StandardEnv();
+
+                try
+                {
+                    Tests.Run(env);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.Read();
+                }
             }
 
             while (true)
@@ -24,7 +29,7 @@ namespace LispFlat
                 {
                     Lisp.Repl("lisp.cs",env);
                 }
-                catch (SyntaxErrorException ex)
+                catch (LispException ex)
                 {
                     Console.WriteLine(ex.Message);
                 }

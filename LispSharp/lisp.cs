@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static System.Console;
 
 namespace LispFlat
@@ -25,7 +22,7 @@ namespace LispFlat
         public Env Find(string var) => 
             TryGetValue(var, out Exp val) ? this: 
             _outer != null                ? _outer.Find(var) 
-                                          : throw new SyntaxErrorException($"Lookup {var} failed");
+                                          : throw new LispException($"Lookup {var} failed");
     }
 
     internal static class Lisp
@@ -37,7 +34,7 @@ namespace LispFlat
         static Queue<string> Tokenize(string s)
         {
             if (s == null)
-                throw new SyntaxErrorException("no code");
+                throw new LispException("no code");
             return new Queue<string>(s.Replace("(", " ( ").Replace(")", " ) ")
             .Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
         }
@@ -46,7 +43,7 @@ namespace LispFlat
         static Exp ReadFromTokens(Queue<string> tokens)
         {
             if (!tokens.Any())
-                throw new SyntaxErrorException("unexpected EOF while reading");
+                throw new LispException("unexpected EOF while reading");
 
             var token = tokens.Dequeue();
             if ("(" == token)
@@ -58,7 +55,7 @@ namespace LispFlat
                 return new Exp(L);
             }
             else if (")" == token)
-                throw new SyntaxErrorException("unexpected ')' ");
+                throw new LispException("unexpected ')' ");
             else
                 return Atom(token);
         }
@@ -126,7 +123,6 @@ namespace LispFlat
         //"Evaluate an expression in an environment."
         internal static Exp Eval(Exp x, Env env=null)
         {
-            _globalEnv = _globalEnv ?? StandardEnv();
             env = env ?? _globalEnv ;
 
             if (x.IsSym) // variable reference - special forms below
@@ -177,8 +173,8 @@ namespace LispFlat
         static Exp Procedure(Exp parms, Exp body, Env env) => new Exp((Exp args, Env e) => Eval(body, new Env(parms, args, env)));
     }
 
-    class SyntaxErrorException : Exception
+    class LispException : Exception
     {
-        public SyntaxErrorException(string message) : base(message) { }
+        public LispException(string message) : base(message) { }
     }
 }
