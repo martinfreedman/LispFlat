@@ -2,7 +2,7 @@
 // LispFlat - A toy Lisp interpretor in C#
 // Copyright (c) 2018 Martin Freedman. All rights reserved.
 // 
-// Derived from python code  (c) Peter Norvig, 2010-16 (See http://norvig.com/lispy.html)
+// Derived from python code (c) Peter Norvig, 2010-16 (See http://norvig.com/lispy.html)
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ namespace LispFlat
         public double Num { get; }
         public bool Is { get; }
         public List<Exp> List { get; }
-        public Func<Exp, Env, Exp> Inv { get; }
+        public Func<Exp, Env, Exp> Proc { get; }
         public Type Type;
 
         // Atoms
@@ -43,10 +43,10 @@ namespace LispFlat
         public Exp(List<Exp> exp) { List = exp; Type = Type.List; }
         public Exp(IEnumerable<Exp> exp) { List = exp.ToList(); Type = Type.List; }
         // procs
-        public Exp(Func<Exp, Env, Exp> inv) { Inv = inv; Type = Type.Proc; }
-        public Exp(Func<Exp, Env, bool> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
-        public Exp(Func<Exp, Env, double> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
-        public Exp(Func<Exp, Env, IEnumerable<Exp>> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
+        public Exp(Func<Exp, Env, Exp> inv) { Proc = inv; Type = Type.Proc; }
+        public Exp(Func<Exp, Env, bool> inv) { Proc = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
+        public Exp(Func<Exp, Env, double> inv) { Proc = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
+        public Exp(Func<Exp, Env, IEnumerable<Exp>> inv) { Proc = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
 
         // list/pair ops
         public int Count => List?.Count ?? -1;
@@ -195,7 +195,7 @@ namespace LispFlat
                 return env.Find(x.Sym)[x.Sym];
             else if (x.Count < 1) // constant literal - Num or Bool
                 return x;
-            else if (x[0].Sym == "quote") // (qoute exp)
+            else if (x[0].Sym == "quote") // (quote exp)
                 return x[1];
             else if (x[0].Sym == "if") // (if test conseq alt)
             {
@@ -231,7 +231,7 @@ namespace LispFlat
             {
                 var proc = Eval(x[0], env);
                 var args = from exp in x.List.Skip(1) select Eval(exp, env);
-                return proc.Inv(new Exp(args), env);
+                return proc.Proc(new Exp(args), env);
             }
         }
 
