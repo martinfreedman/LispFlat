@@ -27,7 +27,7 @@ namespace LispFlat
             {
                 try
                 {
-                    Lisp.Repl("lisp.cs",env);
+                    Lisp.Repl("lispb",env);
                 }
                 catch (LispException ex)
                 {
