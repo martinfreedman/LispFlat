@@ -28,9 +28,10 @@ namespace LispFlat
 
     internal class Exp
     {
+
         public string Sym { get; }
         public double Num { get; }
-        public bool Bool { get; }
+        public bool Is { get; }
         public List<Exp> List { get; }
         public Func<Exp, Env, Exp> Inv { get; }
         public Type Type;
@@ -38,22 +39,40 @@ namespace LispFlat
         // Atoms
         public Exp(string sym) { Sym = sym; Type = Type.Sym; }
         public Exp(double dbl) { Num = dbl; Type = Type.Num; }
-        public Exp(bool @bool) { Bool = @bool; Type = Type.Bool; }
+        public Exp(bool @bool) { Is = @bool; Type = Type.Bool; }
         // lists
         public Exp(List<Exp> exp) { List = exp; Type = Type.List; }
         public Exp(IEnumerable<Exp> exp) { List = exp.ToList(); Type = Type.List; }
         // lambdas/procedures
         public Exp(Func<Exp, Env, Exp> inv) { Inv = inv; Type = Type.Proc; }
+        static Func<Exp, Env, Exp> WrapBool(Func<Exp, Env, bool> f) => (a, e) => new Exp(f(a, e));
+        static Func<Exp, Env, Exp> WrapDouble(Func<Exp, Env, double> f) => (a, e) => new Exp(f(a, e));
+        public Exp(Func<Exp, Env, bool> inv) { Inv = WrapBool(inv); Type = Type.Proc; }
+        public Exp(Func<Exp, Env, double> inv) { Inv = WrapDouble(inv); Type = Type.Proc; }
 
         public int Count => List?.Count ?? -1;
         public Exp Head => List[0];
         public Exp Rest => new Exp(List.Skip(1));
         public Exp this[int i] => List[i];
 
+        // "Numbers become numbers; true/false becomes bools; every other token is a symbol."
+        public static Exp Atom(string token)
+        {
+            if (double.TryParse(token, out double resDbl))
+                return new Exp(resDbl);
+            if (token == "#t")
+                return new Exp(true);
+            if (token == "#f")
+                return new Exp(false);
+            if (token == "")
+                return new Exp(new List<Exp>(0));
+            return new Exp(token);
+        }
+
         public override string ToString()
         {
             if (Type == Type.Bool)
-                return Bool == true ? "#t" : "#f";
+                return Is == true ? "#t" : "#f";
             if (Type == Type.Num)
                 return Num.ToString();
             if (Type == Type.Sym)
@@ -118,48 +137,34 @@ namespace LispFlat
             else if (")" == token)
                 throw new LispException("unexpected ')' ");
             else
-                return Atom(token);
-        }
-
-        // "Numbers become numbers; true/false becomes bools; every other token is a symbol."
-        static Exp Atom(string token)
-        {
-            if (double.TryParse(token, out double resDbl))
-                return new Exp(resDbl);
-            if (token == "#t")
-                return new Exp(true);
-            if (token == "#f")
-                return new Exp(false);
-            if (token == "")
-                return new Exp(new List<Exp>(0));
-            return new Exp(token);
+                return Exp.Atom(token);
         }
 
         //"An environment with some Scheme standard procedures."
         internal static Env StandardEnv() => new Env
         {
-            ["*"] = new Exp((a, e) => new Exp(a[0].Num * a[1].Num)),
-            ["+"] = new Exp((a, e) => new Exp(a[0].Num + a[1].Num)),
-            ["-"] = new Exp((a, e) => new Exp(a[0].Num - a[1].Num)),
-            ["/"] = new Exp((a, e) => new Exp(a[0].Num / a[1].Num)),
-            ["%"] = new Exp((a, e) => new Exp(a[0].Num % a[1].Num)),
-            ["<"] = new Exp((a, e) => new Exp(a[0].Num < a[1].Num)),
-            ["="] = new Exp((a, e) => new Exp(a[0].Num == a[1].Num)),
-            [">"] = new Exp((a, e) => new Exp(a[0].Num > a[1].Num)),
-            [">="] = new Exp((a, e) =>new Exp(a[0].Num >= a[1].Num)),
-            ["<="] = new Exp((a, e) =>new Exp(a[0].Num <= a[1].Num)),
+            ["*"] = new Exp((a, e) => a[0].Num * a[1].Num),
+            ["+"] = new Exp((a, e) => a[0].Num + a[1].Num),
+            ["-"] = new Exp((a, e) => a[0].Num - a[1].Num),
+            ["/"] = new Exp((a, e) => a[0].Num / a[1].Num),
+            ["%"] = new Exp((a, e) => a[0].Num % a[1].Num),
+            ["<"] = new Exp((a, e) => a[0].Num < a[1].Num),
+            ["="] = new Exp((a, e) => a[0].Num == a[1].Num),
+            [">"] = new Exp((a, e) => a[0].Num > a[1].Num),
+            [">="] = new Exp((a, e) =>a[0].Num >= a[1].Num),
+            ["<="] = new Exp((a, e) =>a[0].Num <= a[1].Num),
             ["append"] = new Exp((a,e)=> new Exp(a.Head.List.Concat(a.Rest.Head.List))),
             ["car"] = new Exp((a, e) => a.Head.Head),
             ["cdr"] = new Exp((a, e) => a.Head.Rest),
             ["cons"] = new Exp((a, e) => new Exp(a.Rest.Head.List.Prepend(a.Head))),
-            ["length"] = new Exp((a, e) => new Exp(a.Head.Count)),
+            ["length"] = new Exp((a, e) => a.Head.Count),
             ["list"] = new Exp((a, e) => a),
-            ["list?"] = new Exp((a, e) => new Exp(a.Type == Type.List)),
-            ["not"] = new Exp((a, e) => new Exp(a.Type== Type.Bool ? !a.Bool : false)), 
-            ["null?"] = new Exp((a, e) => new Exp(a.Head.Count==0)), 
-            ["number?"] = new Exp((a, e) => new Exp(a.Type == Type.Num)),
-            ["procedure?"] = new Exp((a, e) => new Exp(a.Type == Type.Proc)),
-            ["symbol?"] = new Exp((a, e) => new Exp(a.Type == Type.Sym)),
+            ["list?"] = new Exp((a, e) => a.Type == Type.List),
+            ["not"] = new Exp((a, e) => a.Type== Type.Bool ? !a.Is : true), 
+            ["null?"] = new Exp((a, e) => a.Head.Count==0), 
+            ["number?"] = new Exp((a, e) => a.Type == Type.Num),
+            ["procedure?"] = new Exp((a, e) => a.Type == Type.Proc),
+            ["symbol?"] = new Exp((a, e) => a.Type == Type.Sym),
         };
 
         //.................. Interaction: A REPL .......................
@@ -195,7 +200,7 @@ namespace LispFlat
             else if (x[0].Sym == "if") // (if test conseq alt)
             {
                 var (test, conseq, alt) = (x[1], x[2], x[3]);
-                var exp = (bool)Eval(test, env).Bool ? conseq : alt;
+                var exp = Eval(test, env).Is ? conseq : alt;
                 return Eval(exp, env);
             }
             else if (x[0].Sym == "define") // (define var exp)
