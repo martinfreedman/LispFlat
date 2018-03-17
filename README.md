@@ -11,7 +11,7 @@ way than to write an interpreter to remind oneself as to the basics!
 
 Secondly I enjoy learning about code and, surprisingly, find that it is easier to translate 
 from Python to C# rather than from C or C++, two languages I used to know very well! As you 
-will see here, the code quite reasonably mirror's python with some caveats, of course.
+will see here, the code quite reasonably mirrors python with some caveats, of course.
 
 Finally the original code is a toy interpretor that is, it is a *toy*. It had very little error
 checking with very limited functionality (with which you can still go surprisingly far) 
@@ -549,9 +549,7 @@ to Python all things considered!
 
 Well I hoped you enjoyed reading this as much as I enjoyed creating this solution. 
 
-Apart from the already linked to original by Peter Norvald there are also [C++]
-(https://howtowriteaprogram.blogspot.co.uk/2010/11/lisp-interpreter-in-90-lines-of-c.html) 
-and, on github, [F#](https://github.com/jbevain/flispy) solutions available, to compare. 
+Apart from the already linked to original by Peter Norvald there are also [C++](https://howtowriteaprogram.blogspot.co.uk/2010/11/lisp-interpreter-in-90-lines-of-c.html) and, on github, [F#](https://github.com/jbevain/flispy) solutions available, to compare. 
 
 Finally you can browse my [source directly](https://github.com/martinfreedman/LispFlat) and fork it if you want!
 
