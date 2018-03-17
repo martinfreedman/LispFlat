@@ -191,10 +191,8 @@ namespace LispFlat
         }
 
         //"Evaluate an expression in an environment."
-        internal static Exp Eval(Exp x, Env env=null)
+        internal static Exp Eval(Exp x, Env env)
         {
-            env = env ?? _globalEnv ;
-
             if (x.Type == Type.Sym) // variable reference - special forms below
                 return env.Find(x.Sym)[x.Sym];
             else if (x.Count <1) // constant literal - Num or Bool
