@@ -44,11 +44,14 @@ namespace LispFlat
         public Exp(IEnumerable<Exp> exp) { List = exp.ToList(); Type = Type.List; }
         // procs
         public Exp(Func<Exp, Env, Exp> inv) { Proc = inv; Type = Type.Proc; }
-        public Exp(Func<Exp, Env, bool> inv) { Proc = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
-        public Exp(Func<Exp, Env, double> inv) { Proc = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
-        public Exp(Func<Exp, Env, IEnumerable<Exp>> inv) { Proc = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
+        
+        // wrappers
+        public static Exp Func(Func<Exp, Env, bool> proc) => new Exp((a, e) => new Exp(proc(a, e)));
+        public static Exp Func(Func<Exp, Env, double> proc) => new Exp((a, e) => new Exp(proc(a, e)));
+        public static Exp Func(Func<Exp, Env, IEnumerable<Exp>> proc) => new Exp((a, e) => new Exp(proc(a, e)));
+        public static Exp Func(Func<Exp, Env, Exp> proc) => new Exp(proc);
 
-        // list/pair ops
+        // list ops
         public int Count => List?.Count ?? -1;
         public Exp this[int i] => List[i];
 
@@ -138,35 +141,32 @@ namespace LispFlat
         }
 
         //"An environment with some Scheme standard procedures."
-        static Exp Proc(Func<Exp, Env, bool> proc) => new Exp(proc);
-        static Exp Proc(Func<Exp, Env, double> proc) => new Exp(proc);
-        static Exp Proc(Func<Exp, Env, IEnumerable<Exp>> proc) => new Exp(proc);
-        static Exp Proc(Func<Exp, Env, Exp> proc) => new Exp(proc);
+       
 
         internal static Env StandardEnv() => new Env
         {
-            ["*"] = Proc((a, e) => a[0].Num * a[1].Num),
-            ["+"] = Proc((a, e) => a[0].Num + a[1].Num),
-            ["-"] = Proc((a, e) => a[0].Num - a[1].Num),
-            ["/"] = Proc((a, e) => a[0].Num / a[1].Num),
-            ["%"] = Proc((a, e) => a[0].Num % a[1].Num),
-            ["<"] = Proc((a, e) => a[0].Num < a[1].Num),
-            ["="] = Proc((a, e) => a[0].Num == a[1].Num),
-            [">"] = Proc((a, e) => a[0].Num > a[1].Num),
-            [">="] = Proc((a, e) =>a[0].Num >= a[1].Num),
-            ["<="] = Proc((a, e) =>a[0].Num <= a[1].Num),
-            ["append"] = Proc((a,e)=> a[0].List.Concat(a[1].List)),
-            ["car"] = Proc((a, e) => a[0].List.First()),
-            ["cdr"] = Proc((a, e) => a[0].List.Skip(1)),
-            ["cons"] = Proc((a, e) => a[1].List.Prepend(a[0])),
-            ["length"] = Proc((a, e) => a[0].Count),
-            ["list"] = Proc((a, e) => a),
-            ["list?"] = Proc((a, e) => a.Type == Type.List),
-            ["not"] = Proc((a, e) =>!a.Is),
-            ["null?"] = Proc((a, e) => a[0].Count==0), 
-            ["number?"] = Proc((a, e) => a.Type == Type.Num),
-            ["procedure?"] = Proc((a, e) => a.Type == Type.Proc),
-            ["symbol?"] = Proc((a, e) => a.Type == Type.Sym),
+            ["*"] = Exp.Func((a, e) => a[0].Num * a[1].Num),
+            ["+"] = Exp.Func((a, e) => a[0].Num + a[1].Num),
+            ["-"] = Exp.Func((a, e) => a[0].Num - a[1].Num),
+            ["/"] = Exp.Func((a, e) => a[0].Num / a[1].Num),
+            ["%"] = Exp.Func((a, e) => a[0].Num % a[1].Num),
+            ["<"] = Exp.Func((a, e) => a[0].Num < a[1].Num),
+            ["="] = Exp.Func((a, e) => a[0].Num == a[1].Num),
+            [">"] = Exp.Func((a, e) => a[0].Num > a[1].Num),
+            [">="] = Exp.Func((a, e) =>a[0].Num >= a[1].Num),
+            ["<="] = Exp.Func((a, e) =>a[0].Num <= a[1].Num),
+            ["append"] = Exp.Func((a,e)=> a[0].List.Concat(a[1].List)),
+            ["car"] = Exp.Func((a, e) => a[0].List.First()),
+            ["cdr"] = Exp.Func((a, e) => a[0].List.Skip(1)),
+            ["cons"] = Exp.Func((a, e) => a[1].List.Prepend(a[0])),
+            ["length"] = Exp.Func((a, e) => a[0].Count),
+            ["list"] = Exp.Func((a, e) => a),
+            ["list?"] = Exp.Func((a, e) => a.Type == Type.List),
+            ["not"] = Exp.Func((a, e) =>!a.Is),
+            ["null?"] = Exp.Func((a, e) => a[0].Count==0), 
+            ["number?"] = Exp.Func((a, e) => a.Type == Type.Num),
+            ["procedure?"] = Exp.Func((a, e) => a.Type == Type.Proc),
+            ["symbol?"] = Exp.Func((a, e) => a.Type == Type.Sym),
         };
 
         //.................. Interaction: A REPL .......................
