@@ -11,7 +11,7 @@ way than to write an interpreter to remind oneself as to the basics!
 
 Secondly I enjoy learning about code and, surprisingly, find that it is easier to translate 
 from Python to C# rather than from C or C++, two languages I used to know very well! As you 
-will see here, the code quite reasonably mirror's python with some caveats, of course.
+will see here, the code quite reasonably mirrors python with some caveats, of course.
 
 Finally the original code is a toy interpretor that is, it is a *toy*. It had very little error
 checking with very limited functionality (with which you can still go surprisingly far) 
