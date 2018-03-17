@@ -26,14 +26,14 @@ One of my secondary challenges was, whist not playing code golf, to get this sol
 Peter's less than 90 lines of code but this solution is around 180 lines of code including tests and the consolde test harness, so going from 
 a dynamic to statically typed language (and one with a poor type system and poor type inference
 compared to, say, F#) I consider this pretty good :-) I have even retained Peter's original 
-comments and most of the variable names, whre possible and useful. 
+comments and most of the variable names, where possible and useful. 
 
 ### Exp ###
 
 The code follows much of the original format except, not being dynamically typed,  an Exp 
 (Expressions) class was added to handle the different types of S-Expressions - atoms and lists.
 
-This has: `double` for numbers (the python has ints as well); `string` is used as the symbol 
+This has: `double` for numbers (the python has integers as well); `string` is used as the symbol 
 type; `bool` (`#t` and `#f`- that are not in the Python) has been added; a type to 
 handle the procedures ; and a `List<Exp>` to recursively store the whole Abstract Syntax Tree.
 
@@ -105,13 +105,13 @@ captured in `Atom()`. This was one of those gotchas in this port.
 
 This solution uses the .Net `List<T>` type as the underlying data structure for Lisp lists. This
 is obviously inefficient, especially seeing (later) both how `cdr` is implemented - as `List.Skip(1).ToList()` and 
-that `cons` uses Linq's `Prepend()` onto a `List<Exp>`, unlike Lisp, where the prepend opration is
-cheaper, it is the the Append/Add operation that is cheaper with .Net `List<T>`
+that `cons` uses Linq's `Prepend()` onto a `List<Exp>`, unlike Lisp, where the prepend operation is
+cheaper, it is the Append/Add operation that is cheaper with .Net `List<T>`
  
 The main pain point was the need to use wrappers to handle the differing output types from 
 Standard Procedures, which are represented as `Func<Exp,Env,Exp>` and the need to
 wrap those again in order to store them in the same Environment dictionary (see below) as other 
-Symbol Expression pairs. (With more time than allowed for this project, a better soltuoin might be 
+Symbol Expression pairs. (With more time than allowed for this project, a better solution might be 
 developed). 
 
 Finally, it was more logical to move a couple of methods into this class. These were the lisp string 
@@ -148,7 +148,7 @@ This is the purpose of the zip. This will be discussed when we get to Lambdas be
 there are nested environments, so that the local lambda scope does not pollute the general 
 environment and that the lambda has its arguments bound in the current context.
  
-(Also added was a minor extra peice of error checking,  it was really useful to see key misses 
+(Also added was a minor extra piece of error checking,  it was really useful to see key misses 
 in debugging). 
  
  ### (Parse(Tokenize(Read))) ###
@@ -186,19 +186,19 @@ in debugging).
          return Exp.Atom(token);
  }
  ```
-This is the the first half of the core of an interpreter. It so similar to the python that any 
-python coder completely unfamiliar with C# who knows the orginal code should grok this easily.
+This is the first half of the core of an interpreter. It so similar to the python that any 
+python coder completely unfamiliar with C# who knows the original code should grok this easily.
  
 The `Tokenize()` function is incredibly simple, not even any regexps needed! This is partly due to the simple and
 consistent syntax of S-Expressions. A more sophisticated implementation could not be as simple 
-but this is an elegant tokeizer.
+but this is an elegant tokenizer.
 
 The parser reads these tokens into the relevant Exp types. The nested lists are loaded into 
-`List<Exp>` which is a type in `Exp`.  Noe that the empty list `()` creates an empty List<Exp>
+`List<Exp>` which is a type in `Exp`.  Noe that the empty list `()` creates an empty `List<Exp>`
 which translates to the empty string `""`. This must be captured in Atom() and was the source of some 
 mischief in debugging.
  
-The simplcity of this solution means that parsing is perfomred on per line entered basis, so 
+The simplicity of this solution means that parsing is performed on per line entered basis, so 
 no multi-line lisp can be used (that can be done from files as can be seen later in the Tests 
 section).
  
@@ -233,14 +233,14 @@ internal static Env StandardEnv() => new Env
 
  ```
 You will notice there are fewer standard procedures than in the Python, but the above was 
-enough to pass all the tests plus add some addditonal tests. 
+enough to pass all the tests plus add some additional tests. 
 
 No attempt was made to add in `System.Math` which was a 1 liner in python (but not tested although 
 those at least some of those functions do work in the original). Note that the math procedures are binary or dyadic and not n-ary. I did not check if the 
 original handles n-ary operations but that can be done with map in this solution.
 
 There were other procedures that were removed that were not tested and did not work in the 
-python such as `map` and `apply`. These were added back in, written as Lisp lamdas, as part 
+python such as `map` and `apply`. These were added back in, written as Lisp lambdas, as part 
 of the test suite! 
  
 The subtlety here is understanding Lisp's lists. At this level, there is a single list of arguments. 
@@ -327,7 +327,7 @@ internal static Exp Eval(Exp x, Env env)
 //"A user-defined Scheme procedure."
 static Exp Procedure(Exp parms, Exp body, Env env) => new Exp((Exp args, Env e) => Eval(body, new Env(parms, args, env)));
  ```
-This is the second half of the core of an interpeter (along with the Env environment dictionary). It closely mirrors the Python. 
+This is the second half of the core of an interpreter (along with the `Env` environment dictionary). It closely mirrors the Python. 
 Surprisingly this took very little puzzling to create nor to debug. 
 
 Once a decent (ish) Exp data structure had been determined it was very quick to get a running 
@@ -340,14 +340,14 @@ Given the previous question, it is reasonable to first discuss 'special forms'.
 
 #### Special Forms ####
 
-When Eval() runs recursively and it finds a Symbol in the first position of a list, it 
+When `Eval()` runs recursively and it finds a Symbol in the first position of a list, it 
 then calls the environment and returns the relevant value. This can be an atom, list or function. The first IsSym calls does not 
 know, it just returns the result and then eval is called on the result., applies the remaining (cdr) arguments to that function and returns.
 
 In the case of an atom being returned, this is dealt with in the second if `x.Count<1` ( a count of zero is the empty list and now works as 
 an atom).
 
-Recursing thorugh eval one ends up at the `else` clause, where the list, for that is what it must be, 
+Recursing through eval one ends up at the `else` clause, where the list, for that is what it must be, 
 contains a prefix function followed by a number of arguments. That is the standard form. 
 The function is at position x[0]. The remaining lists items are the arguments which are collected and then the relevant procedure (standard or user)
 is invoked.  
@@ -357,7 +357,7 @@ description I leave it as a user exercise to examine further.
 
 The final and interesting 'special form' is 'lambda'. This contains two lists - the first of parameters at x[1] 
 and the body of the lambda at x[2]. For example in  `(lambda (x) (+ x x))` x[0]="lambda", 
-x[1]=(x) a list on one paramter called 'x' and in x[2] a 3 element list - a normal form function (addition).
+x[1]=(x) a list on one parameter called 'x' and in x[2] a 3 element list - a normal form function (addition).
 
 This constructs a `Procedure()` which returns a lambda which, when invoked - by Eval later - 
 updates the local environment through which it provides values (arguments) to the expected parameters 
@@ -365,7 +365,7 @@ of the lambda. This construct is invoked in the same way as any standard normal 
 via the default `else` clause.
 
 The Python works differently, creating an instance of a class that can be directly invoked with arguments (not a mthod of that instance). The difference 
-between thw two approaches is indicated by last code line ("A user-defined Scheme procedure.") above. 
+between the two approaches is indicated by last code line ("A user-defined Scheme procedure.") above. 
 
 ### Debugging ###
 ```csharp
@@ -419,18 +419,18 @@ use the Repl to further investigate the issue under question and test procedures
 the Repl!
 
 Very usefully in debugging this, I had installed Racket and Python so I could run both the 
-original code and comapre both this and the original to some decent dialect of Scheme (Racket in this case)
+original code and compare both this and the original to some decent dialect of Scheme (Racket in this case)
 Not only is there cut and paste between the test output and the repl, but I can compare and contrast
 with `lis.py` and Racket.
 
 I have to emphasize that lis.py is quite buggy with very limited error handling. The use of program.cs
-here enables one to have a similar delopment experience working with lis.py running in Pyhton in a consolet
+here enables one to have a similar development experience working with `lis.py` running in Python in a consolet
 
 And to note again that this code mirrors lis.py in the sense that only additional code needed to 
 get it to pass the same tests were added.
 
 The gotchas were some normal form functions that did not work even on lis.py, hence I ended
-up rempvoing, still with t(more than but still close to) minimal set to pass the lis.py tests.
+up removing, still with t(more than but still close to) minimal set to pass the `lis.py` tests.
 
 The worst gotcha was a classic. The first test for `quote`, kept on returning extra brackets 
 and every now and then there appeared to be strange extra spaces before some closing brackets. 
@@ -533,7 +533,7 @@ of the tests this worked very well for this project. Again if I took it more ser
 not the way I would recommend it. As I said previously it was fun to go back to the way I tested in the 80s
 and early 90s.
 
-Note that apart from some "higher-order" functions such as zip, already being in the original 
+Note that apart from some higher-order functions such as zip, already being in the original 
 test suite, I added some more tests including the last two being `map` and `reduce`. I am guessing it
 was easier getting them to work in LispFlat than it would have been to write and test in the
 C# interpreter. Well both took less than 5 minutes together here and that seemed a good time to stop 
@@ -542,16 +542,16 @@ this project!
 ### Lines of Code ###
 ![Loc](loc.png)
 
-As you can see the whole solution incuding tests and test harness is a total of 192 lines. Not bad compared
+As you can see the whole solution including tests and test harness is a total of 192 lines. Not bad compared
 to Python all things considered!
 
 ### Conclusion ###
 
 Well I hoped you enjoyed reading this as much as I enjoyed creating this solution. 
 
-Apart from the already linked to original by Peter Norvald there are also [C++]
+Apart from the already linked to original by Peter Norvig there are also [C++]
 (https://howtowriteaprogram.blogspot.co.uk/2010/11/lisp-interpreter-in-90-lines-of-c.html) 
-and, on github, [F#](https://github.com/jbevain/flispy) solutions available, to compare. 
+and, on git-hub, [F#](https://github.com/jbevain/flispy) solutions available, to compare. 
 
 Finally you can browse my [source directly](https://github.com/martinfreedman/LispFlat) and fork it if you want!
 
