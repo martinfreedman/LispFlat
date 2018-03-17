@@ -170,19 +170,40 @@ namespace LispFlat
         static Env _globalEnv;
 
         //"A prompt-read-eval-print loop."
-        public static void Repl(string prompt = "list.cs", Env env =null)
+        public static void Repl(string prompt = "lispb", Env env =null)
         {
+            WriteLine("Lisp Flat 1.0");
             _globalEnv = env ?? StandardEnv();
-
+            var indent="";
             Title = prompt;
             while (true)
             {
-                Write(prompt + ">");
-                var val = Eval(Parse(ReadLine()), _globalEnv);
+                Write(prompt);
+                var val = Eval(Parse(ReadBalancedBrackets(ref indent)), _globalEnv);
                 var str = val.ToString();
                 if (!string.IsNullOrEmpty(str))
                     WriteLine(str);
             }
+        }
+
+        // multi-line entry
+        static string ReadBalancedBrackets(ref string indent)
+        {
+            var count = 0;
+            var input = "";
+            do
+            {
+                Write($">{indent}");
+                var current = ReadLine();
+                if (current == "")
+                    break;
+                input += current;
+                count = input.Count(c => c == '(') - input.Count(c => c == ')');
+                if (count < 0) break;
+                indent = new string(' ', 3 * count);
+            }
+            while (count > 0);
+            return input;
         }
 
         //"Evaluate an expression in an environment."
