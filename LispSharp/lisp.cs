@@ -48,10 +48,8 @@ namespace LispFlat
         public Exp(Func<Exp, Env, double> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
         public Exp(Func<Exp, Env, IEnumerable<Exp>> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
 
-        // list ops
+        // list/pair ops
         public int Count => List?.Count ?? -1;
-        public Exp Head => List[0];
-        public Exp Rest => new Exp(List.Skip(1));
         public Exp this[int i] => List[i];
 
         // "Numbers become numbers; true/false becomes bools; every other token is a symbol."
@@ -140,35 +138,35 @@ namespace LispFlat
         }
 
         //"An environment with some Scheme standard procedures."
-        static Exp Function(Func<Exp, Env, bool> func) => new Exp(func);
-        static Exp Function(Func<Exp, Env, double> func) => new Exp(func);
-        static Exp Function(Func<Exp, Env, IEnumerable<Exp>> func) => new Exp(func);
-        static Exp Function(Func<Exp, Env, Exp> func) => new Exp(func);
+        static Exp Proc(Func<Exp, Env, bool> proc) => new Exp(proc);
+        static Exp Proc(Func<Exp, Env, double> proc) => new Exp(proc);
+        static Exp Proc(Func<Exp, Env, IEnumerable<Exp>> proc) => new Exp(proc);
+        static Exp Proc(Func<Exp, Env, Exp> proc) => new Exp(proc);
 
         internal static Env StandardEnv() => new Env
         {
-            ["*"] = Function((a, e) => a[0].Num * a[1].Num),
-            ["+"] = Function((a, e) => a[0].Num + a[1].Num),
-            ["-"] = Function((a, e) => a[0].Num - a[1].Num),
-            ["/"] = Function((a, e) => a[0].Num / a[1].Num),
-            ["%"] = Function((a, e) => a[0].Num % a[1].Num),
-            ["<"] = Function((a, e) => a[0].Num < a[1].Num),
-            ["="] = Function((a, e) => a[0].Num == a[1].Num),
-            [">"] = Function((a, e) => a[0].Num > a[1].Num),
-            [">="] = Function((a, e) =>a[0].Num >= a[1].Num),
-            ["<="] = Function((a, e) =>a[0].Num <= a[1].Num),
-            ["append"] = Function((a,e)=> a[0].List.Concat(a[1].List)),
-            ["car"] = Function((a, e) => a[0].Head),
-            ["cdr"] = Function((a, e) => a[0].Rest),
-            ["cons"] = Function((a, e) => a[1].List.Prepend(a[0])),
-            ["length"] = Function((a, e) => a[0].Count),
-            ["list"] = Function((a, e) => a),
-            ["list?"] = Function((a, e) => a.Type == Type.List),
-            ["not"] = Function((a, e) => a.Type== Type.Bool ? !a.Is : true), 
-            ["null?"] = Function((a, e) => a.Head.Count==0), 
-            ["number?"] = Function((a, e) => a.Type == Type.Num),
-            ["procedure?"] = Function((a, e) => a.Type == Type.Proc),
-            ["symbol?"] = Function((a, e) => a.Type == Type.Sym),
+            ["*"] = Proc((a, e) => a[0].Num * a[1].Num),
+            ["+"] = Proc((a, e) => a[0].Num + a[1].Num),
+            ["-"] = Proc((a, e) => a[0].Num - a[1].Num),
+            ["/"] = Proc((a, e) => a[0].Num / a[1].Num),
+            ["%"] = Proc((a, e) => a[0].Num % a[1].Num),
+            ["<"] = Proc((a, e) => a[0].Num < a[1].Num),
+            ["="] = Proc((a, e) => a[0].Num == a[1].Num),
+            [">"] = Proc((a, e) => a[0].Num > a[1].Num),
+            [">="] = Proc((a, e) =>a[0].Num >= a[1].Num),
+            ["<="] = Proc((a, e) =>a[0].Num <= a[1].Num),
+            ["append"] = Proc((a,e)=> a[0].List.Concat(a[1].List)),
+            ["car"] = Proc((a, e) => a[0].List.First()),
+            ["cdr"] = Proc((a, e) => a[0].List.Skip(1)),
+            ["cons"] = Proc((a, e) => a[1].List.Prepend(a[0])),
+            ["length"] = Proc((a, e) => a[0].Count),
+            ["list"] = Proc((a, e) => a),
+            ["list?"] = Proc((a, e) => a.Type == Type.List),
+            ["not"] = Proc((a, e) =>!a.Is),
+            ["null?"] = Proc((a, e) => a[0].Count==0), 
+            ["number?"] = Proc((a, e) => a.Type == Type.Num),
+            ["procedure?"] = Proc((a, e) => a.Type == Type.Proc),
+            ["symbol?"] = Proc((a, e) => a.Type == Type.Sym),
         };
 
         //.................. Interaction: A REPL .......................
@@ -195,10 +193,10 @@ namespace LispFlat
         {
             if (x.Type == Type.Sym) // variable reference - special forms below
                 return env.Find(x.Sym)[x.Sym];
-            else if (x.Count <1) // constant literal - Num or Bool
+            else if (x.Count < 1) // constant literal - Num or Bool
                 return x;
             else if (x[0].Sym == "quote") // (qoute exp)
-                return x.Rest.Head;
+                return x[1];
             else if (x[0].Sym == "if") // (if test conseq alt)
             {
                 var (test, conseq, alt) = (x[1], x[2], x[3]);
@@ -225,14 +223,14 @@ namespace LispFlat
             else if (x[0].Sym == "begin") // (begin exp+)
             {
                 Exp last = null;
-                foreach (var exp in x.Rest.List)
+                foreach (var exp in x.List.Skip(1))
                     last = Eval(exp, env);
                 return last;
             }
             else                                // proc arg
             {
-                var proc = Eval(x.Head, env);
-                var args = from exp in x.Rest.List select Eval(exp, env);
+                var proc = Eval(x[0], env);
+                var args = from exp in x.List.Skip(1) select Eval(exp, env);
                 return proc.Inv(new Exp(args), env);
             }
         }
