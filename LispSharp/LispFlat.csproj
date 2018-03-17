@@ -50,7 +50,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Exp.cs" />
     <Compile Include="lisp.cs" />
     <Compile Include="Test.cs" />
     <Compile Include="Program.cs" />

@@ -1,10 +1,71 @@
-﻿using System;
+﻿#region License and Terms
+// LispFlat - A toy Lisp interpretor in C#
+// Copyright (c) 2018 Martin Freedman. All rights reserved.
+// 
+// Derived from python code  (c) Peter Norvig, 2010-16 (See http://norvig.com/lispy.html)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#endregion
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static System.Console;
 
 namespace LispFlat
 {
+    internal enum Type { Num, Bool, Sym, List, Proc }
+
+    internal class Exp
+    {
+        public string Sym { get; }
+        public double Num { get; }
+        public bool Bool { get; }
+        public List<Exp> List { get; }
+        public Func<Exp, Env, Exp> Inv { get; }
+        public Type Type;
+
+        // Atoms
+        public Exp(string sym) { Sym = sym; Type = Type.Sym; }
+        public Exp(double dbl) { Num = dbl; Type = Type.Num; }
+        public Exp(bool @bool) { Bool = @bool; Type = Type.Bool; }
+        // lists
+        public Exp(List<Exp> exp) { List = exp; Type = Type.List; }
+        public Exp(IEnumerable<Exp> exp) { List = exp.ToList(); Type = Type.List; }
+        // lambdas/procedures
+        public Exp(Func<Exp, Env, Exp> inv) { Inv = inv; Type = Type.Proc; }
+
+        public int Count => List?.Count ?? -1;
+        public Exp Head => List[0];
+        public Exp Rest => new Exp(List.Skip(1));
+        public Exp this[int i] => List[i];
+
+        public override string ToString()
+        {
+            if (Type == Type.Bool)
+                return Bool == true ? "#t" : "#f";
+            if (Type == Type.Num)
+                return Num.ToString();
+            if (Type == Type.Sym)
+                return Sym;
+            if (Type == Type.Proc)
+                return "<function>"; ;
+            if (Type == Type.List)
+                return Count > 0 ? $"({string.Join(" ", List.Select(i => i.ToString()))})" : "";
+            return "stringify error";
+        }
+    }
+
     //"An environment: a dict of {'var':val} pairs, with an outer Env."
     internal class Env : Dictionary<string, Exp>
     {
@@ -93,12 +154,12 @@ namespace LispFlat
             ["cons"] = new Exp((a, e) => new Exp(a.Rest.Head.List.Prepend(a.Head))),
             ["length"] = new Exp((a, e) => new Exp(a.Head.Count)),
             ["list"] = new Exp((a, e) => a),
-            ["list?"] = new Exp((a, e) => new Exp(a.IsList)),
-            ["not"] = new Exp((a, e) => new Exp(a.IsBool ? !a.Bool : true)), 
+            ["list?"] = new Exp((a, e) => new Exp(a.Type == Type.List)),
+            ["not"] = new Exp((a, e) => new Exp(a.Type== Type.Bool ? !a.Bool : false)), 
             ["null?"] = new Exp((a, e) => new Exp(a.Head.Count==0)), 
-            ["number?"] = new Exp((a, e) => new Exp(a.IsNum)),
-            ["procedure?"] = new Exp((a, e) => new Exp(a.IsProc)),
-            ["symbol?"] = new Exp((a, e) => new Exp(a.IsSym)),
+            ["number?"] = new Exp((a, e) => new Exp(a.Type == Type.Num)),
+            ["procedure?"] = new Exp((a, e) => new Exp(a.Type == Type.Proc)),
+            ["symbol?"] = new Exp((a, e) => new Exp(a.Type == Type.Sym)),
         };
 
         //.................. Interaction: A REPL .......................
@@ -125,7 +186,7 @@ namespace LispFlat
         {
             env = env ?? _globalEnv ;
 
-            if (x.IsSym) // variable reference - special forms below
+            if (x.Type == Type.Sym) // variable reference - special forms below
                 return env.Find(x.Sym)[x.Sym];
             else if (x.Count <1) // constant literal - Num or Bool
                 return x;
