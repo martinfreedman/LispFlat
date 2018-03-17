@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("LispSharp")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("LispFlat")]
+[assembly: AssemblyDescription("A toy Lisp interpreter in C#")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LispSharp")]
-[assembly: AssemblyCopyright("Copyright ©  2018")]
+[assembly: AssemblyCompany("Unravel")]
+[assembly: AssemblyProduct("LispFlat")]
+[assembly: AssemblyCopyright("Copyright © Martin Freedman 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

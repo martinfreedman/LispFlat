@@ -141,8 +141,6 @@ namespace LispFlat
         }
 
         //"An environment with some Scheme standard procedures."
-       
-
         internal static Env StandardEnv() => new Env
         {
             ["*"] = Exp.Func((a, e) => a[0].Num * a[1].Num),
@@ -169,7 +167,6 @@ namespace LispFlat
             ["symbol?"] = Exp.Func((a, e) => a.Type == Type.Sym),
         };
 
-        //.................. Interaction: A REPL .......................
         static Env _globalEnv;
 
         //"A prompt-read-eval-print loop."
