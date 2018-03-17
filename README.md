@@ -1,5 +1,7 @@
-# LispFlat
-(LispFlat (A C# port of Peter Norvig's Toy Lisp) or (How to Write a (Lisp) Interpreter (in C#))) 
+# (How to Write a (Lisp) Interpreter (in C#))
+(LispFlat (A C# port of Peter Norvig's Toy Lisp) or ) 
+
+Document incomplete - work in progress
 
 ## Introduction ##
 This is a quick port to C# of Peter Norvig's famous [lis.py](https://github.com/norvig/pytudes/blob/master/py/lis.py) toy Lips(Scheme) interpretor.
@@ -166,43 +168,39 @@ Abstract Syntax Tree.
  
  ### Standard Environment ###
  ```csharp
-  //"An environment with some Scheme standard procedures."
+ //"An environment with some Scheme standard procedures."
         internal static Env StandardEnv() => new Env
         {
-            ["*"] = new Exp((a, e) => new Exp(a[0].Num * a[1].Num)),
-            ["+"] = new Exp((a, e) => new Exp(a[0].Num + a[1].Num)),
-            ["-"] = new Exp((a, e) => new Exp(a[0].Num - a[1].Num)),
-            ["/"] = new Exp((a, e) => new Exp(a[0].Num / a[1].Num)),
-            ["%"] = new Exp((a, e) => new Exp(a[0].Num % a[1].Num)),
-            ["<"] = new Exp((a, e) => new Exp(a[0].Num < a[1].Num)),
-            ["="] = new Exp((a, e) => new Exp(a[0].Num == a[1].Num)),
-            [">"] = new Exp((a, e) => new Exp(a[0].Num > a[1].Num)),
-            [">="] = new Exp((a, e) =>new Exp(a[0].Num >= a[1].Num)),
-            ["<="] = new Exp((a, e) =>new Exp(a[0].Num <= a[1].Num)),
+            ["*"] = new Exp((a, e) => a[0].Num * a[1].Num),
+            ["+"] = new Exp((a, e) => a[0].Num + a[1].Num),
+            ["-"] = new Exp((a, e) => a[0].Num - a[1].Num),
+            ["/"] = new Exp((a, e) => a[0].Num / a[1].Num),
+            ["%"] = new Exp((a, e) => a[0].Num % a[1].Num),
+            ["<"] = new Exp((a, e) => a[0].Num < a[1].Num),
+            ["="] = new Exp((a, e) => a[0].Num == a[1].Num),
+            [">"] = new Exp((a, e) => a[0].Num > a[1].Num),
+            [">="] = new Exp((a, e) =>a[0].Num >= a[1].Num),
+            ["<="] = new Exp((a, e) =>a[0].Num <= a[1].Num),
             ["append"] = new Exp((a,e)=> new Exp(a.Head.List.Concat(a.Rest.Head.List))),
             ["car"] = new Exp((a, e) => a.Head.Head),
             ["cdr"] = new Exp((a, e) => a.Head.Rest),
             ["cons"] = new Exp((a, e) => new Exp(a.Rest.Head.List.Prepend(a.Head))),
-            ["length"] = new Exp((a, e) => new Exp(a.Head.Count)),
+            ["length"] = new Exp((a, e) => a.Head.Count),
             ["list"] = new Exp((a, e) => a),
-            ["list?"] = new Exp((a, e) => new Exp(a.IsList)),
-            ["not"] = new Exp((a, e) => new Exp(a.IsBool ? !a.Bool : true)), 
-            ["null?"] = new Exp((a, e) => new Exp(a.Head.Count==0)), 
-            ["number?"] = new Exp((a, e) => new Exp(a.IsNum)),
-            ["procedure?"] = new Exp((a, e) => new Exp(a.IsProc)),
-            ["symbol?"] = new Exp((a, e) => new Exp(a.IsSym)),
+            ["list?"] = new Exp((a, e) => a.Type == Type.List),
+            ["not"] = new Exp((a, e) => a.Type== Type.Bool ? !a.Is : true), 
+            ["null?"] = new Exp((a, e) => a.Head.Count==0), 
+            ["number?"] = new Exp((a, e) => a.Type == Type.Num),
+            ["procedure?"] = new Exp((a, e) => a.Type == Type.Proc),
+            ["symbol?"] = new Exp((a, e) => a.Type == Type.Sym),
         };
  ```
  You will notice there are fewer standard procedures than in the python, but the above was enough to pass all the tests plus add some more tests. 
  I did not try to add in `System.Math` which was a 1 liner in python. There were other procedures I removed that were not tested and did not work 
  in the python such as `map` and `apply`. I added them back in as Lisp as part of the test suite. 
  
- Now there is some real ugliness here and it perturbs my DRY urges, that I have to wrap the both output value of the function delegate 
- in an `Exp` and also the whole of the delegate also in an `Exp`. This is becuase the environment can store non function delegate expressions 
- such as lambda argument parameters and simple variables such as named lists and atoms, so the dictoinary stores Exp as values. This 
- looks like a challange that could be solved with a monad, dealing with wrapping and unwrapping values, unfortunately the types are not 
- generic at this stage. If this was not a toy project, I would definitely revisit this and make it not just cleaner code but it would, 
- likely, be more performant. The above did the job nonetheless. Maybe I ahve missed something obvious, I did not spend much time resolving this issue.
+Now there is some real ugliness here and it perturbs my DRY urges, that I have to wrap the the whole of the delegate in an `Exp`. This is because the environment can store non function delegate expressions 
+ such as lambda argument parameters and simple variables such as named lists and atoms, so the dictionary stores Exp as values. 
  
  ### REPL ###
  ```csharp
