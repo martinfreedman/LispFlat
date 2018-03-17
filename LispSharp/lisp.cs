@@ -167,18 +167,22 @@ namespace LispFlat
             ["symbol?"] = Exp.Func((a, e) => a.Type == Type.Sym),
         };
 
-        static Env _globalEnv;
-
         //"A prompt-read-eval-print loop."
+        static Env _globalEnv;
+        static string _indentPrompt = "";
+        static string _prompt;
+
         public static void Repl(string prompt = "lispb", Env env =null)
         {
+            _prompt = prompt;
             WriteLine("Lisp Flat 1.0");
+            
+            _indentPrompt = new string(' ',prompt.Length);
             _globalEnv = env ?? StandardEnv();
             var indent="";
             Title = prompt;
             while (true)
             {
-                Write(prompt);
                 var val = Eval(Parse(ReadBalancedBrackets(ref indent)), _globalEnv);
                 var str = val.ToString();
                 if (!string.IsNullOrEmpty(str))
@@ -192,14 +196,16 @@ namespace LispFlat
             var count = 0;
             var input = "";
             do
-            {
-                Write($">{indent}");
+            {   if (count ==0)
+                    Write($"{_prompt}>{indent}");
+                else
+                    Write($"{_indentPrompt}>{indent}");
                 var current = ReadLine();
                 if (current == "")
                     break;
                 input += current;
                 count = input.Count(c => c == '(') - input.Count(c => c == ')');
-                if (count < 0) break;
+                if (count < 0) break; // too many closed brackets ignore
                 indent = new string(' ', 3 * count);
             }
             while (count > 0);
