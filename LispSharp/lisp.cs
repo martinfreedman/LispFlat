@@ -28,7 +28,6 @@ namespace LispFlat
 
     internal class Exp
     {
-
         public string Sym { get; }
         public double Num { get; }
         public bool Is { get; }
@@ -43,13 +42,13 @@ namespace LispFlat
         // lists
         public Exp(List<Exp> exp) { List = exp; Type = Type.List; }
         public Exp(IEnumerable<Exp> exp) { List = exp.ToList(); Type = Type.List; }
-        // lambdas/procedures
+        // procs
         public Exp(Func<Exp, Env, Exp> inv) { Inv = inv; Type = Type.Proc; }
-        static Func<Exp, Env, Exp> WrapBool(Func<Exp, Env, bool> f) => (a, e) => new Exp(f(a, e));
-        static Func<Exp, Env, Exp> WrapDouble(Func<Exp, Env, double> f) => (a, e) => new Exp(f(a, e));
-        public Exp(Func<Exp, Env, bool> inv) { Inv = WrapBool(inv); Type = Type.Proc; }
-        public Exp(Func<Exp, Env, double> inv) { Inv = WrapDouble(inv); Type = Type.Proc; }
+        public Exp(Func<Exp, Env, bool> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
+        public Exp(Func<Exp, Env, double> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
+        public Exp(Func<Exp, Env, IEnumerable<Exp>> inv) { Inv = (a, e) => new Exp(inv(a, e)); Type = Type.Proc; }
 
+        // list ops
         public int Count => List?.Count ?? -1;
         public Exp Head => List[0];
         public Exp Rest => new Exp(List.Skip(1));
@@ -64,7 +63,7 @@ namespace LispFlat
                 return new Exp(true);
             if (token == "#f")
                 return new Exp(false);
-            if (token == "")
+            if (token == "") // nil or ()
                 return new Exp(new List<Exp>(0));
             return new Exp(token);
         }
@@ -72,7 +71,7 @@ namespace LispFlat
         public override string ToString()
         {
             if (Type == Type.Bool)
-                return Is == true ? "#t" : "#f";
+                return Is ? "#t" : "#f";
             if (Type == Type.Num)
                 return Num.ToString();
             if (Type == Type.Sym)
@@ -141,30 +140,35 @@ namespace LispFlat
         }
 
         //"An environment with some Scheme standard procedures."
+        static Exp Function(Func<Exp, Env, bool> func) => new Exp(func);
+        static Exp Function(Func<Exp, Env, double> func) => new Exp(func);
+        static Exp Function(Func<Exp, Env, IEnumerable<Exp>> func) => new Exp(func);
+        static Exp Function(Func<Exp, Env, Exp> func) => new Exp(func);
+
         internal static Env StandardEnv() => new Env
         {
-            ["*"] = new Exp((a, e) => a[0].Num * a[1].Num),
-            ["+"] = new Exp((a, e) => a[0].Num + a[1].Num),
-            ["-"] = new Exp((a, e) => a[0].Num - a[1].Num),
-            ["/"] = new Exp((a, e) => a[0].Num / a[1].Num),
-            ["%"] = new Exp((a, e) => a[0].Num % a[1].Num),
-            ["<"] = new Exp((a, e) => a[0].Num < a[1].Num),
-            ["="] = new Exp((a, e) => a[0].Num == a[1].Num),
-            [">"] = new Exp((a, e) => a[0].Num > a[1].Num),
-            [">="] = new Exp((a, e) =>a[0].Num >= a[1].Num),
-            ["<="] = new Exp((a, e) =>a[0].Num <= a[1].Num),
-            ["append"] = new Exp((a,e)=> new Exp(a.Head.List.Concat(a.Rest.Head.List))),
-            ["car"] = new Exp((a, e) => a.Head.Head),
-            ["cdr"] = new Exp((a, e) => a.Head.Rest),
-            ["cons"] = new Exp((a, e) => new Exp(a.Rest.Head.List.Prepend(a.Head))),
-            ["length"] = new Exp((a, e) => a.Head.Count),
-            ["list"] = new Exp((a, e) => a),
-            ["list?"] = new Exp((a, e) => a.Type == Type.List),
-            ["not"] = new Exp((a, e) => a.Type== Type.Bool ? !a.Is : true), 
-            ["null?"] = new Exp((a, e) => a.Head.Count==0), 
-            ["number?"] = new Exp((a, e) => a.Type == Type.Num),
-            ["procedure?"] = new Exp((a, e) => a.Type == Type.Proc),
-            ["symbol?"] = new Exp((a, e) => a.Type == Type.Sym),
+            ["*"] = Function((a, e) => a[0].Num * a[1].Num),
+            ["+"] = Function((a, e) => a[0].Num + a[1].Num),
+            ["-"] = Function((a, e) => a[0].Num - a[1].Num),
+            ["/"] = Function((a, e) => a[0].Num / a[1].Num),
+            ["%"] = Function((a, e) => a[0].Num % a[1].Num),
+            ["<"] = Function((a, e) => a[0].Num < a[1].Num),
+            ["="] = Function((a, e) => a[0].Num == a[1].Num),
+            [">"] = Function((a, e) => a[0].Num > a[1].Num),
+            [">="] = Function((a, e) =>a[0].Num >= a[1].Num),
+            ["<="] = Function((a, e) =>a[0].Num <= a[1].Num),
+            ["append"] = Function((a,e)=> a[0].List.Concat(a[1].List)),
+            ["car"] = Function((a, e) => a[0].Head),
+            ["cdr"] = Function((a, e) => a[0].Rest),
+            ["cons"] = Function((a, e) => a[1].List.Prepend(a[0])),
+            ["length"] = Function((a, e) => a[0].Count),
+            ["list"] = Function((a, e) => a),
+            ["list?"] = Function((a, e) => a.Type == Type.List),
+            ["not"] = Function((a, e) => a.Type== Type.Bool ? !a.Is : true), 
+            ["null?"] = Function((a, e) => a.Head.Count==0), 
+            ["number?"] = Function((a, e) => a.Type == Type.Num),
+            ["procedure?"] = Function((a, e) => a.Type == Type.Proc),
+            ["symbol?"] = Function((a, e) => a.Type == Type.Sym),
         };
 
         //.................. Interaction: A REPL .......................
