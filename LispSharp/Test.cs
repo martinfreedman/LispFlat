@@ -72,25 +72,31 @@ namespace LispFlat
         //"For each (exp, expected) test case, see if eval(parse(exp)) == expected."
         internal static void Run(Env env = null)
         {
-            // var fails = 0;
+            int fails = 0, tests = 0;
             foreach (var (x, expected) in _testAll.Select(kvp => (kvp.Key, kvp.Value)))
             {
+                tests++;
                 ForegroundColor = ConsoleColor.Gray;
                 var result = Eval(Parse(x), env);
                 var ok = (result.ToString() == expected);
+                if (ok) ForegroundColor = ConsoleColor.DarkGreen;
                 if (expected != "")
+                    
                     Write($"{x} => {result}");
                 else
                     Write($"{x} => None");
+                ForegroundColor = ConsoleColor.Gray;
                 if (!ok)
                 {
-                    ForegroundColor = ConsoleColor.Red;
+                    fails ++;
+                    ForegroundColor = ConsoleColor.DarkRed;
                     WriteLine($" !! => {expected} ");
                     ForegroundColor = ConsoleColor.Gray;
                 }
                 else
                     WriteLine();
             }
+            WriteLine($"{tests} Tests: {fails} failed");
         }
     }
 }
