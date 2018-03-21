@@ -183,6 +183,7 @@ namespace LispFlat
             Title = prompt;
             while (true)
             {
+                Write(prompt);
                 var val = Eval(Parse(ReadBalancedBrackets(ref indent)), _globalEnv);
                 var str = val.ToString();
                 if (!string.IsNullOrEmpty(str))
@@ -196,7 +197,8 @@ namespace LispFlat
             var count = 0;
             var input = "";
             do
-            {   if (count ==0)
+            {
+                if (count ==0)
                     Write($"{_prompt}>{indent}");
                 else
                     Write($"{_indentPrompt}>{indent}");
